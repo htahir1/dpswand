@@ -1,46 +1,107 @@
-import flask
+from flask import Flask, render_template, request
 import flask.ext.sqlalchemy
-import flask.ext.restless
+from config import DevelopmentConfig
+import numpy as np
+from common.DTW import DynamicTimeWarping
 
 # Create the Flask application and the Flask-SQLAlchemy object.
-app = flask.Flask(__name__)
-app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+app = Flask(__name__)
+app.config.from_object(DevelopmentConfig)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
-# Create your Flask-SQLALchemy models as usual but with the following two
-# (reasonable) restrictions:
-#   1. They must have a primary key column of type sqlalchemy.Integer or
-#      type sqlalchemy.Unicode.
-#   2. They must have an __init__ method which accepts keyword arguments for
-#      all columns (the constructor in flask.ext.sqlalchemy.SQLAlchemy.Model
-#      supplies such a method, so you don't need to declare a new one).
+
 class Person(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode, unique=True)
-    birth_date = db.Column(db.Date)
+
+    def __init__(self, name, birth_date):
+        self.name = name
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
 
 
-class Computer(db.Model):
+class Gesture(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode, unique=True)
-    vendor = db.Column(db.Unicode)
-    purchase_time = db.Column(db.DateTime)
+    raw_data = db.Column(db.String(300))
     owner_id = db.Column(db.Integer, db.ForeignKey('person.id'))
-    owner = db.relationship('Person', backref=db.backref('computers',
+    owner = db.relationship('Person', backref=db.backref('gestures',
                                                          lazy='dynamic'))
 
+    def __init__(self, name, raw_data):
+        self.name = name
+        self.raw_data = raw_data
 
-# Create the database tables.
-db.create_all()
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
 
-# Create the Flask-Restless API manager.
-manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)
 
-# Create API endpoints, which will be available at /api/<tablename> by
-# default. Allowed HTTP methods can be specified as well.
-manager.create_api(Person, methods=['GET', 'POST', 'DELETE'])
-manager.create_api(Computer, methods=['GET'])
+def convert_gesture_raw_to_np(raw_data):
+    samples = [sample.split(', ') for sample in raw_data.split('\n')]
+    return np.array(samples, dtype=float).reshape(-1, 1)
 
-# start the flask loop
-app.run()
+
+@app.route('/post_template_gesture', methods=['POST'])
+def post_template_gesture():
+    errors = []
+    results = {}
+    if request.method == "POST":
+        # get url that the person has entered
+        try:
+            r = request.get_data()
+        except:
+            errors.append(
+                "Unable to get URL. Please make sure it's valid and try again."
+            )
+            return render_template('index.html', errors=errors)
+        if r:
+            raw_data = r
+            # save the results
+            results = sorted(
+                raw_data
+            )
+            try:
+                result = Gesture(
+                    name="Temp",
+                    raw_data=raw_data
+                )
+                db.session.add(result)
+                db.session.commit()
+            except:
+                errors.append("Unable to add item to database.")
+    return render_template('index.html', errors=errors, results=results)
+
+
+@app.route('/post_test_gesture', methods=['POST'])
+def post_test_gesture():
+    errors = []
+    results = {}
+    if request.method == "POST":
+        # get url that the person has entered
+        try:
+            r = request.get_data()
+        except:
+            errors.append(
+                "Unable to get URL. Please make sure it's valid and try again."
+            )
+            return render_template('index.html', errors=errors)
+        if r:
+            test = convert_gesture_raw_to_np(r)
+            predictor = DynamicTimeWarping()
+            gestures = Gesture.query.all()
+            results = []
+            for gesture in gestures:
+                template = convert_gesture_raw_to_np(gesture.raw_data)
+                dist, cost, acc, path = predictor.calculate_error(template=template, test_data=test)
+                results.append({'name' : gesture.name, 'dist' : dist})
+
+    return render_template('prediction_result.html', errors=errors, prediction=results)
+
+
+if __name__ == '__main__':
+    # Create the database tables.
+    db.create_all()
+    # start the flask loop
+    app.run()

@@ -12,8 +12,8 @@ class DynamicTimeWarping:
         self.acc = []
         self.path = []
 
-    def calculate_error(self, training_data, test_data):
-        self.dist, self.cost, self.acc, self.path = dtw(training_data, test_data, dist=lambda x, y: np.linalg.norm(x - y, ord=1))
+    def calculate_error(self, template, test_data):
+        self.dist, self.cost, self.acc, self.path = dtw(template, test_data, dist=lambda x, y: np.linalg.norm(x - y, ord=1))
         return self.dist
 
     def make_plot(self):

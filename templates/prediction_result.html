@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Prediction</title>
+    <ul>
+        {% for prediction in predictions %}
+            <li>{{ prediction["name"] }} : {{ prediction["dist"] }}</li>
+        {% endfor %}
+    </ul>
 </head>
 <body>
 
