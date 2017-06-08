@@ -45,6 +45,11 @@ def convert_gesture_raw_to_np(raw_data):
     return np.array(samples, dtype=float).reshape(-1, 1)
 
 
+@app.route('/', methods=['GET'])
+def test():
+    return "Test"
+
+
 @app.route('/post_template_gesture', methods=['POST'])
 def post_template_gesture():
     errors = []
@@ -102,8 +107,8 @@ def post_test_gesture():
     return render_template('prediction_result.html', errors=errors, predictions=results)
 
 
-if __name__ == '__main__':
-    # Create the database tables.
-    db.create_all()
-    # start the flask loop
-    app.run()
+# if __name__ == '__main__':
+#     # Create the database tables.
+#     db.create_all()
+#     # start the flask loop
+#     app.run()
