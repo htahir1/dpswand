@@ -22,8 +22,8 @@ app.config.from_object(DevelopmentConfig)
 
 
 class Gesture(ndb.Model):
-    name = ndb.StringProperty()
-    raw_data = ndb.StringProperty()
+    name = ndb.TextProperty()
+    raw_data = ndb.TextProperty()
 
 
 def convert_gesture_raw_to_np(raw_data):
