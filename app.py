@@ -24,7 +24,7 @@ class Person(db.Model):
 
 class Gesture(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.Unicode, unique=True)
+    name = db.Column(db.Unicode)
     raw_data = db.Column(db.String(300))
     owner_id = db.Column(db.Integer, db.ForeignKey('person.id'))
     owner = db.relationship('Person', backref=db.backref('gestures',
@@ -39,7 +39,9 @@ class Gesture(db.Model):
 
 
 def convert_gesture_raw_to_np(raw_data):
+    raw_data = raw_data.replace('\r', "")
     samples = [sample.split(', ') for sample in raw_data.split('\n')]
+
     return np.array(samples, dtype=float).reshape(-1, 1)
 
 
@@ -94,10 +96,10 @@ def post_test_gesture():
             results = []
             for gesture in gestures:
                 template = convert_gesture_raw_to_np(gesture.raw_data)
-                dist, cost, acc, path = predictor.calculate_error(template=template, test_data=test)
+                dist = predictor.calculate_error(template=template, test_data=test)
                 results.append({'name' : gesture.name, 'dist' : dist})
 
-    return render_template('prediction_result.html', errors=errors, prediction=results)
+    return render_template('prediction_result.html', errors=errors, predictions=results)
 
 
 if __name__ == '__main__':

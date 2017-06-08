@@ -8,3 +8,4 @@ SQLAlchemy
 dtw
 numpy
 matplotlib
+mlpy==3.5

@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Prediction</title>
+</head>
+<body>
     <ul>
         {% for prediction in predictions %}
             <li>{{ prediction["name"] }} : {{ prediction["dist"] }}</li>
         {% endfor %}
     </ul>
-</head>
-<body>
-
 </body>
 </html>
