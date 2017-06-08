@@ -3,39 +3,27 @@ import flask.ext.sqlalchemy
 from config import DevelopmentConfig
 import numpy as np
 from common.DTW import DynamicTimeWarping
+from google.appengine.ext import ndb
 
 # Create the Flask application and the Flask-SQLAlchemy object.
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
 
-class Person(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.Unicode, unique=True)
+# class Person(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     name = db.Column(db.Unicode, unique=True)
+#
+#     def __init__(self, name, birth_date):
+#         self.name = name
+#
+#     def __repr__(self):
+#         return '<id {}>'.format(self.id)
 
-    def __init__(self, name, birth_date):
-        self.name = name
 
-    def __repr__(self):
-        return '<id {}>'.format(self.id)
-
-
-class Gesture(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.Unicode)
-    raw_data = db.Column(db.String(300))
-    owner_id = db.Column(db.Integer, db.ForeignKey('person.id'))
-    owner = db.relationship('Person', backref=db.backref('gestures',
-                                                         lazy='dynamic'))
-
-    def __init__(self, name, raw_data):
-        self.name = name
-        self.raw_data = raw_data
-
-    def __repr__(self):
-        return '<id {}>'.format(self.id)
+class Gesture(ndb.Model):
+    name = ndb.StringProperty()
+    raw_data = ndb.StringProperty()
 
 
 def convert_gesture_raw_to_np(raw_data):
@@ -50,7 +38,7 @@ def test():
     return "Test"
 
 
-@app.route('/post_template_gesture', methods=['POST'])
+@app.route('/gesture/template', methods=['POST'])
 def post_template_gesture():
     errors = []
     results = {}
@@ -74,14 +62,13 @@ def post_template_gesture():
                     name="Temp",
                     raw_data=raw_data
                 )
-                db.session.add(result)
-                db.session.commit()
+                result.put()
             except:
                 errors.append("Unable to add item to database.")
     return render_template('index.html', errors=errors, results=results)
 
 
-@app.route('/post_test_gesture', methods=['POST'])
+@app.route('/gesture/test', methods=['POST'])
 def post_test_gesture():
     errors = []
     results = {}
@@ -97,7 +84,7 @@ def post_test_gesture():
         if r:
             test = convert_gesture_raw_to_np(r)
             predictor = DynamicTimeWarping()
-            gestures = Gesture.query.all()
+            gestures = Gesture.query().fetch()
             results = []
             for gesture in gestures:
                 template = convert_gesture_raw_to_np(gesture.raw_data)
