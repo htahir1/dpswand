@@ -3,7 +3,7 @@ from dtw import dtw
 
 
 class DynamicTimeWarping:
-    """A simple example class"""
+    '''Class for comparing signals. Finds the distance of the test_data to the template'''
 
     def __init__(self):
         self.dist = 0
