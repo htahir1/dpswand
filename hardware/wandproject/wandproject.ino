@@ -11,6 +11,7 @@ boolean sending = true;
 boolean recording = true;
 
 float gyrX, gyrY, gyrZ, accX, accY, accZ, magX, magY, magZ, roll, pitch, heading;
+const int buttonPin = 2;
 
 LSM9DS1 imu;
 
@@ -31,6 +32,8 @@ void setup() {
   }
 
   Serial.println("Connected to the WiFi network");
+
+  pinMode(buttonPin, INPUT);
   
   imu.settings.device.commInterface = IMU_MODE_I2C;
   imu.settings.device.mAddress = LSM9DS1_M;
@@ -48,6 +51,15 @@ void setup() {
 }
 
 void loop() {
+
+  buttonState = digitalRead(buttonPin);
+
+  if (buttonState == HIGH) {
+    recording = true;
+  } else {
+    recording = false;
+    sending = true; 
+  }
   
   if(recording) {
     // Update the sensor values whenever new data is available
