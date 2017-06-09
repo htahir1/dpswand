@@ -7,11 +7,12 @@
 const char* ssid = "AndroidAP";
 const char* password =  "byob6208";
 
-boolean sending = true;
-boolean recording = true;
+boolean sending = false;
+boolean recording = false;
 
 float gyrX, gyrY, gyrZ, accX, accY, accZ, magX, magY, magZ, roll, pitch, heading;
-const int buttonPin = 2;
+const int buttonPinTraining = 2;  // TODO: find the right pin: 34
+const int buttonPinTesting = 3; // TODO: find the right pin : 35
 
 LSM9DS1 imu;
 
@@ -33,7 +34,8 @@ void setup() {
 
   Serial.println("Connected to the WiFi network");
 
-  pinMode(buttonPin, INPUT);
+  pinMode(buttonPinTraining, INPUT);
+  pinMode(buttonPinTesting, INPUT);
   
   imu.settings.device.commInterface = IMU_MODE_I2C;
   imu.settings.device.mAddress = LSM9DS1_M;
@@ -52,9 +54,17 @@ void setup() {
 
 void loop() {
 
-  buttonState = digitalRead(buttonPin);
+  buttonStateTraining = digitalRead(buttonPinTraining);
+  buttonStateTesting = digitalRead(buttonPinTesting);
+  
+  char* endPoint;
+  if (buttonStateTraining == HIGH) {
+    endPoint = "http://dpswand.appspot.com/gesture/template"
+  } else {
+    endPoint = "http://dpswand.appspot.com/gesture/test"
+  }
 
-  if (buttonState == HIGH) {
+  if (buttonStateTraining == HIGH || buttonStateTesting == HIGH) {
     recording = true;
   } else {
     recording = false;
@@ -77,8 +87,9 @@ void loop() {
 
     if(sending) {
       if(WiFi.status()== WL_CONNECTED) {
-        HTTPClient http;   
-        http.begin("http://dpswand.appspot.com/gesture/template");
+        HTTPClient http;
+        if    
+        http.begin(endPoint);
         http.addHeader("Content-Type", "text/plain");
         int httpResponseCode = http.POST("POSTING from ESP32");
         
