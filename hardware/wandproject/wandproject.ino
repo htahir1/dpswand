@@ -64,7 +64,6 @@ void loop() {
       }
       setData();
       
-      recorded_data += "\n";
     }
 
   if(sending) {
@@ -72,6 +71,7 @@ void loop() {
       HTTPClient http;   
       http.begin("http://dpswand.appspot.com/gesture/template");
       http.addHeader("Content-Type", "text/plain");
+      Serial.println(recorded_data);
       int httpResponseCode = http.POST(recorded_data);
       
       if(httpResponseCode>0){
@@ -94,22 +94,27 @@ void loop() {
 }
 
 void setData() {
-  gyrX = store_data(imu.calcGyro(imu.gx));
-  gyrY = store_data(imu.calcGyro(imu.gy));
-  gyrZ = store_data(imu.calcGyro(imu.gz));
-  accX = store_data(imu.calcAccel(imu.ax));
-  accY = store_data(imu.calcAccel(imu.ay));
-  accZ = store_data(imu.calcAccel(imu.az));
-  magX = store_data(imu.calcMag(imu.mx));
-  magY = store_data(imu.calcMag(imu.my));
-  magZ = store_data(imu.calcMag(imu.mz));
-  roll = store_data(getRoll(imu.ay, imu.az));
-  pitch = getPitch(imu.ax, imu.ay, imu.az));
-  heading = getHeading(-imu.my, -imu.mx, imu.mz));
+  gyrX = store_data(imu.calcGyro(imu.gx), false);
+  gyrY = store_data(imu.calcGyro(imu.gy), false);
+  gyrZ = store_data(imu.calcGyro(imu.gz), false);
+  accX = store_data(imu.calcAccel(imu.ax), false);
+  accY = store_data(imu.calcAccel(imu.ay), false);
+  accZ = store_data(imu.calcAccel(imu.az), false);
+  magX = store_data(imu.calcMag(imu.mx), false);
+  magY = store_data(imu.calcMag(imu.my), false);
+  magZ = store_data(imu.calcMag(imu.mz), false);
+  roll = store_data(getRoll(imu.ay, imu.az), false);
+  pitch = store_data(getPitch(imu.ax, imu.ay, imu.az), false);
+  heading = store_data(getHeading(-imu.my, -imu.mx, imu.mz), true);
 }
 
-void store_data(float x) {
-  recorded_data += String(x);
+float store_data(float x, boolean last) {
+  if(!last) {
+    recorded_data += String(x) + ", ";
+  } else {
+    recorded_data += String(x) + "\n";
+  }
+  return x;
 }
 
 float getRoll(float ay, float az) {
