@@ -1,19 +1,8 @@
-#include <StandardCplusplus.h>
-#include <serstream>
 #include <Wire.h>
 #include <SPI.h>
 #include <SparkFunLSM9DS1.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <string>
-#include <vector>
-#include <sstream>
-
-std::string Convert (float number){
-    std::ostringstream buff;
-    buff<<number;
-    return buff.str();   
-}
 
 const char* ssid = "AndroidAP";
 const char* password =  "byob6208";
@@ -23,25 +12,14 @@ boolean recording = true;
 
 float gyrX, gyrY, gyrZ, accX, accY, accZ, magX, magY, magZ, roll, pitch, heading;
 
+String recorded_data = "";
+
 LSM9DS1 imu;
 
 #define LSM9DS1_M 0x1E // Would be 0x1C if SDO_M is LOW
 #define LSM9DS1_AG  0x6B // Would be 0x6A if SDO_AG is LOW
 static unsigned long lastPrint = 0; // Keep track of print time
 #define DECLINATION -3.2 // Declination (degrees) in Munich, Germany.
-
-using namespace std;
-
-// <iostream> declares cout/cerr, but the application must define them
-// because it's up to you what to do with them.
-namespace std
-{
-  ohserialstream cout(Serial);
-}
-
-
-vector<vector<string>> recorded_data;
-vector<string> instance_data;
 
 void setup() {
   
@@ -86,8 +64,7 @@ void loop() {
       }
       setData();
       
-      recorded_data.push_back(instance_data);
-      instance_data.clear();
+      recorded_data += "\n";
     }
 
   if(sending) {
@@ -95,7 +72,7 @@ void loop() {
       HTTPClient http;   
       http.begin("http://dpswand.appspot.com/gesture/template");
       http.addHeader("Content-Type", "text/plain");
-      int httpResponseCode = http.POST(convert_2d_vector_matrix(recorded_data));
+      int httpResponseCode = http.POST(recorded_data);
       
       if(httpResponseCode>0){
         String response = http.getString();
@@ -112,7 +89,7 @@ void loop() {
     }
 
     //clear data
-    recorded_data.clear();
+    recorded_data = "";
   }
 }
 
@@ -132,33 +109,7 @@ void setData() {
 }
 
 void store_data(float x) {
-  instance_data.push_back(Convert(x));
-}
-
-
-string convert_2d_vector_matrix(vector<vector<string>> vec) {
-    string matrix = "";
-    if (!vec.empty()){
-      for (int i=0; i < vec.size(); ++i) {
-        matrix += convert_vector_string(vec[i]) + '\n';
-      }
-    }
-    return matrix;
-}
-
-string convert_vector_string(vector<string> vec) {
-    std::ostringstream oss;
-
-    if (!vec.empty()){
-      // Convert all but the last element to avoid a trailing ","
-      std::copy(vec.begin(), vec.end()-1,
-          std::ostream_iterator<int>(oss, ","));
-  
-      // Now add the last element with no delimiter
-      oss << vec.back();
-    }
-  
-    return oss.str();
+  recorded_data += String(x);
 }
 
 float getRoll(float ay, float az) {
