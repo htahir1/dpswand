@@ -12,6 +12,8 @@ boolean recording = true;
 
 float gyrX, gyrY, gyrZ, accX, accY, accZ, magX, magY, magZ, roll, pitch, heading;
 
+String recorded_data = "";
+
 LSM9DS1 imu;
 
 #define LSM9DS1_M 0x1E // Would be 0x1C if SDO_M is LOW
@@ -51,55 +53,68 @@ void loop() {
   
   if(recording) {
     // Update the sensor values whenever new data is available
-    if(imu.gyroAvailable()) {
-      imu.readGyro();
-    }
-    if(imu.accelAvailable()) {
-      imu.readAccel();
-    }
-    if(imu.magAvailable()) {
-      imu.readMag();
-    }
-
-    setGyroAccelMagData();
-
-    if(sending) {
-      if(WiFi.status()== WL_CONNECTED) {
-        HTTPClient http;   
-        http.begin("http://dpswand.appspot.com/gesture/template");
-        http.addHeader("Content-Type", "text/plain");
-        int httpResponseCode = http.POST("POSTING from ESP32");
-        
-        if(httpResponseCode>0){
-          String response = http.getString();
-          Serial.println(httpResponseCode);
-          Serial.println(response);
-          sending = false;
-        } else {
-          Serial.print("Error on sending POST: ");
-          Serial.println(httpResponseCode);
-        }
-        http.end();
-      } else {
-        Serial.println("Error in WiFi connection");   
+      if(imu.gyroAvailable()) {
+        imu.readGyro();
       }
+      if(imu.accelAvailable()) {
+        imu.readAccel();
+      }
+      if(imu.magAvailable()) {
+        imu.readMag();
+      }
+      setData();
+      
     }
+
+  if(sending) {
+    if(WiFi.status()== WL_CONNECTED) {
+      HTTPClient http;   
+      http.begin("http://dpswand.appspot.com/gesture/template");
+      http.addHeader("Content-Type", "text/plain");
+      Serial.println(recorded_data);
+      int httpResponseCode = http.POST(recorded_data);
+      
+      if(httpResponseCode>0){
+        String response = http.getString();
+        Serial.println(httpResponseCode);
+        Serial.println(response);
+        sending = false;
+      } else {
+        Serial.print("Error on sending POST: ");
+        Serial.println(recorded_data);
+      }
+      http.end();
+    } else {
+      Serial.println("Error in WiFi connection");   
+    }
+
+    //clear data
+    recorded_data = "";
   }
 }
 
-void setGyroAccelMagData() {
-  gyrX = imu.calcGyro(imu.gx);
-  gyrY = imu.calcGyro(imu.gy);
-  gyrZ = imu.calcGyro(imu.gz);
-  accX = imu.calcAccel(imu.ax);
-  accY = imu.calcAccel(imu.ay);
-  accZ = imu.calcAccel(imu.az);
-  magX = imu.calcMag(imu.mx);
-  magY = imu.calcMag(imu.my);
-  magZ = imu.calcMag(imu.mz);
-  roll = getRoll(imu.ay, imu.az);
-  pitch = getPitch(imu.ax, imu.ay, imu.az);
-  heading = getHeading(-imu.my, -imu.mx, imu.mz);
+void setData() {
+  gyrX = store_data(imu.calcGyro(imu.gx), false);
+  gyrY = store_data(imu.calcGyro(imu.gy), false);
+  gyrZ = store_data(imu.calcGyro(imu.gz), false);
+  accX = store_data(imu.calcAccel(imu.ax), false);
+  accY = store_data(imu.calcAccel(imu.ay), false);
+  accZ = store_data(imu.calcAccel(imu.az), false);
+  magX = store_data(imu.calcMag(imu.mx), false);
+  magY = store_data(imu.calcMag(imu.my), false);
+  magZ = store_data(imu.calcMag(imu.mz), false);
+  roll = store_data(getRoll(imu.ay, imu.az), false);
+  pitch = store_data(getPitch(imu.ax, imu.ay, imu.az), false);
+  heading = store_data(getHeading(-imu.my, -imu.mx, imu.mz), true);
+}
+
+float store_data(float x, boolean last) {
+  if(!last) {
+    recorded_data += String(x) + ", ";
+  } else {
+    recorded_data += String(x) + "\n";
+  }
+  return x;
 }
 
 float getRoll(float ay, float az) {

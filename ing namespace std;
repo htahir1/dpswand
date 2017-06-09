@@ -1,0 +1,178 @@
+[1mdiff --git a/hardware/wandproject/wandproject.ino b/hardware/wandproject/wandproject.ino[m
+[1mindex f10eeb5..47b36fc 100644[m
+[1m--- a/hardware/wandproject/wandproject.ino[m
+[1m+++ b/hardware/wandproject/wandproject.ino[m
+[36m@@ -1,8 +1,19 @@[m
+[32m+[m[32m#include <StandardCplusplus.h>[m
+[32m+[m[32m#include <serstream>[m
+ #include <Wire.h>[m
+ #include <SPI.h>[m
+ #include <SparkFunLSM9DS1.h>[m
+ #include <WiFi.h>[m
+ #include <HTTPClient.h>[m
+[32m+[m[32m#include <string>[m
+[32m+[m[32m#include <vector>[m
+[32m+[m[32m#include <sstream>[m
+[32m+[m
+[32m+[m[32mstd::string Convert (float number){[m
+[32m+[m[32m    std::ostringstream buff;[m
+[32m+[m[32m    buff<<number;[m
+[32m+[m[32m    return buff.str();[m[41m   [m
+[32m+[m[32m}[m
+ [m
+ const char* ssid = "AndroidAP";[m
+ const char* password =  "byob6208";[m
+[36m@@ -19,6 +30,19 @@[m [mLSM9DS1 imu;[m
+ static unsigned long lastPrint = 0; // Keep track of print time[m
+ #define DECLINATION -3.2 // Declination (degrees) in Munich, Germany.[m
+ [m
+[32m+[m[32musing namespace std;[m
+[32m+[m
+[32m+[m[32m// <iostream> declares cout/cerr, but the application must define them[m
+[32m+[m[32m// because it's up to you what to do with them.[m
+[32m+[m[32mnamespace std[m
+[32m+[m[32m{[m
+[32m+[m[32m  ohserialstream cout(Serial);[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m
+[32m+[m[32mvector<vector<string>> recorded_data;[m
+[32m+[m[32mvector<string> instance_data;[m
+[32m+[m
+ void setup() {[m
+   [m
+   Serial.begin(115200);[m
+[36m@@ -51,55 +75,90 @@[m [mvoid loop() {[m
+   [m
+   if(recording) {[m
+     // Update the sensor values whenever new data is available[m
+[31m-    if(imu.gyroAvailable()) {[m
+[31m-      imu.readGyro();[m
+[31m-    }[m
+[31m-    if(imu.accelAvailable()) {[m
+[31m-      imu.readAccel();[m
+[31m-    }[m
+[31m-    if(imu.magAvailable()) {[m
+[31m-      imu.readMag();[m
+[32m+[m[32m      if(imu.gyroAvailable()) {[m
+[32m+[m[32m        imu.readGyro();[m
+[32m+[m[32m      }[m
+[32m+[m[32m      if(imu.accelAvailable()) {[m
+[32m+[m[32m        imu.readAccel();[m
+[32m+[m[32m      }[m
+[32m+[m[32m      if(imu.magAvailable()) {[m
+[32m+[m[32m        imu.readMag();[m
+[32m+[m[32m      }[m
+[32m+[m[32m      setData();[m
+[32m+[m[41m      [m
+[32m+[m[32m      recorded_data.push_back(instance_data);[m
+[32m+[m[32m      instance_data.clear();[m
+     }[m
+ [m
+[31m-    setGyroAccelMagData();[m
+[31m-[m
+[31m-    if(sending) {[m
+[31m-      if(WiFi.status()== WL_CONNECTED) {[m
+[31m-        HTTPClient http;   [m
+[31m-        http.begin("http://dpswand.appspot.com/gesture/template");[m
+[31m-        http.addHeader("Content-Type", "text/plain");[m
+[31m-        int httpResponseCode = http.POST("POSTING from ESP32");[m
+[31m-        [m
+[31m-        if(httpResponseCode>0){[m
+[31m-          String response = http.getString();[m
+[31m-          Serial.println(httpResponseCode);[m
+[31m-          Serial.println(response);[m
+[31m-          sending = false;[m
+[31m-        } else {[m
+[31m-          Serial.print("Error on sending POST: ");[m
+[31m-          Serial.println(httpResponseCode);[m
+[31m-        }[m
+[31m-        http.end();[m
+[32m+[m[32m  if(sending) {[m
+[32m+[m[32m    if(WiFi.status()== WL_CONNECTED) {[m
+[32m+[m[32m      HTTPClient http;[m[41m   [m
+[32m+[m[32m      http.begin("http://dpswand.appspot.com/gesture/template");[m
+[32m+[m[32m      http.addHeader("Content-Type", "text/plain");[m
+[32m+[m[32m      int httpResponseCode = http.POST(convert_2d_vector_matrix(recorded_data));[m
+[32m+[m[41m      [m
+[32m+[m[32m      if(httpResponseCode>0){[m
+[32m+[m[32m        String response = http.getString();[m
+[32m+[m[32m        Serial.println(httpResponseCode);[m
+[32m+[m[32m        Serial.println(response);[m
+[32m+[m[32m        sending = false;[m
+       } else {[m
+[31m-        Serial.println("Error in WiFi connection");   [m
+[32m+[m[32m        Serial.print("Error on sending POST: ");[m
+[32m+[m[32m        Serial.println(recorded_data);[m
+       }[m
+[32m+[m[32m      http.end();[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      Serial.println("Error in WiFi connection");[m[41m   [m
+     }[m
+[32m+[m
+[32m+[m[32m    //clear data[m
+[32m+[m[32m    recorded_data.clear();[m
+   }[m
+ }[m
+ [m
+[31m-void setGyroAccelMagData() {[m
+[31m-  gyrX = imu.calcGyro(imu.gx);[m
+[31m-  gyrY = imu.calcGyro(imu.gy);[m
+[31m-  gyrZ = imu.calcGyro(imu.gz);[m
+[31m-  accX = imu.calcAccel(imu.ax);[m
+[31m-  accY = imu.calcAccel(imu.ay);[m
+[31m-  accZ = imu.calcAccel(imu.az);[m
+[31m-  magX = imu.calcMag(imu.mx);[m
+[31m-  magY = imu.calcMag(imu.my);[m
+[31m-  magZ = imu.calcMag(imu.mz);[m
+[31m-  roll = getRoll(imu.ay, imu.az);[m
+[31m-  pitch = getPitch(imu.ax, imu.ay, imu.az);[m
+[31m-  heading = getHeading(-imu.my, -imu.mx, imu.mz);[m
+[32m+[m[32mvoid setData() {[m
+[32m+[m[32m  gyrX = store_data(imu.calcGyro(imu.gx));[m
+[32m+[m[32m  gyrY = store_data(imu.calcGyro(imu.gy));[m
+[32m+[m[32m  gyrZ = store_data(imu.calcGyro(imu.gz));[m
+[32m+[m[32m  accX = store_data(imu.calcAccel(imu.ax));[m
+[32m+[m[32m  accY = store_data(imu.calcAccel(imu.ay));[m
+[32m+[m[32m  accZ = store_data(imu.calcAccel(imu.az));[m
+[32m+[m[32m  magX = store_data(imu.calcMag(imu.mx));[m
+[32m+[m[32m  magY = store_data(imu.calcMag(imu.my));[m
+[32m+[m[32m  magZ = store_data(imu.calcMag(imu.mz));[m
+[32m+[m[32m  roll = store_data(getRoll(imu.ay, imu.az));[m
+[32m+[m[32m  pitch = getPitch(imu.ax, imu.ay, imu.az));[m
+[32m+[m[32m  heading = getHeading(-imu.my, -imu.mx, imu.mz));[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mvoid store_data(float x) {[m
+[32m+[m[32m  instance_data.push_back(Convert(x));[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m
+[32m+[m[32mstring convert_2d_vector_matrix(vector<vector<string>> vec) {[m
+[32m+[m[32m    string matrix = "";[m
+[32m+[m[32m    if (!vec.empty()){[m
+[32m+[m[32m      for (int i=0; i < vec.size(); ++i) {[m
+[32m+[m[32m        matrix += convert_vector_string(vec[i]) + '\n';[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m[32m    return matrix;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mstring convert_vector_string(vector<string> vec) {[m
+[32m+[m[32m    std::ostringstream oss;[m
+[32m+[m
+[32m+[m[32m    if (!vec.empty()){[m
+[32m+[m[32m      // Convert all but the last element to avoid a trailing ","[m
+[32m+[m[32m      std::copy(vec.begin(), vec.end()-1,[m
+[32m+[m[32m          std::ostream_iterator<int>(oss, ","));[m
+[32m+[m[41m  [m
+[32m+[m[32m      // Now add the last element with no delimiter[m
+[32m+[m[32m      oss << vec.back();[m
+[32m+[m[32m    }[m
+[32m+[m[41m  [m
+[32m+[m[32m    return oss.str();[m
+ }[m
+ [m
+ float getRoll(float ay, float az) {[m
+warning: LF will be replaced by CRLF in hardware/wandproject/wandproject.ino.
+The file will have its original line endings in your working directory.
