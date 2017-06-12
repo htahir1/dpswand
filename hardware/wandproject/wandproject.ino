@@ -29,14 +29,12 @@ void setup() {
   
   Serial.begin(115200);
 
-  /*
   WiFi.begin(ssid, password); 
 
   while(WiFi.status() != WL_CONNECTED) { //Check for the connection
     delay(1000);
     Serial.println("Connecting to WiFi..");
   }
-  */
 
   Serial.println("Connected to the WiFi network");
   
@@ -63,7 +61,6 @@ void loop() {
   Serial.println(buttonStateTraining);
   Serial.println(buttonStateTesting);
 
-  /*
   if (buttonStateTraining == HIGH) {
     endPoint = "http://dpswand.appspot.com/gesture/template";
   } 
@@ -117,7 +114,7 @@ void loop() {
     } else {
       Serial.println("Error in WiFi connection");   
     }
-  }*/
+  }
 }
 
 void setGyroAccelMagData() {
