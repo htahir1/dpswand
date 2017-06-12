@@ -9,10 +9,14 @@ const char* password =  "byob6208";
 
 boolean sending = false;
 boolean recording = false;
+boolean endpointCheck = false;
 
 float gyrX, gyrY, gyrZ, accX, accY, accZ, magX, magY, magZ, roll, pitch, heading;
-const int buttonPinTraining = 2;  // TODO: find the right pin: 34
-const int buttonPinTesting = 3; // TODO: find the right pin : 35
+const int buttonPinTraining = A6;
+const int buttonPinTesting = A7;
+int buttonStateTraining = 0;
+int buttonStateTesting = 0;
+String endPoint;
 
 LSM9DS1 imu;
 
@@ -25,17 +29,16 @@ void setup() {
   
   Serial.begin(115200);
 
+  /*
   WiFi.begin(ssid, password); 
 
   while(WiFi.status() != WL_CONNECTED) { //Check for the connection
     delay(1000);
     Serial.println("Connecting to WiFi..");
   }
+  */
 
   Serial.println("Connected to the WiFi network");
-
-  pinMode(buttonPinTraining, INPUT);
-  pinMode(buttonPinTesting, INPUT);
   
   imu.settings.device.commInterface = IMU_MODE_I2C;
   imu.settings.device.mAddress = LSM9DS1_M;
@@ -54,19 +57,26 @@ void setup() {
 
 void loop() {
 
-  buttonStateTraining = digitalRead(buttonPinTraining);
-  buttonStateTesting = digitalRead(buttonPinTesting);
-  
-  char* endPoint;
+  buttonStateTraining = analogRead(buttonPinTraining);
+  buttonStateTesting = analogRead(buttonPinTesting);
+
+  Serial.println(buttonStateTraining);
+  Serial.println(buttonStateTesting);
+
+  /*
   if (buttonStateTraining == HIGH) {
-    endPoint = "http://dpswand.appspot.com/gesture/template"
-  } else {
-    endPoint = "http://dpswand.appspot.com/gesture/test"
+    endPoint = "http://dpswand.appspot.com/gesture/template";
+  } 
+  
+  if (buttonStateTesting == HIGH) {
+    endPoint = "http://dpswand.appspot.com/gesture/test";
   }
 
   if (buttonStateTraining == HIGH || buttonStateTesting == HIGH) {
+    Serial.println("Button Pressed");
     recording = true;
   } else {
+    Serial.println("Button Released");
     recording = false;
     sending = true; 
   }
@@ -84,30 +94,30 @@ void loop() {
     }
 
     setGyroAccelMagData();
-
-    if(sending) {
-      if(WiFi.status()== WL_CONNECTED) {
-        HTTPClient http;
-        if    
-        http.begin(endPoint);
-        http.addHeader("Content-Type", "text/plain");
-        int httpResponseCode = http.POST("POSTING from ESP32");
-        
-        if(httpResponseCode>0){
-          String response = http.getString();
-          Serial.println(httpResponseCode);
-          Serial.println(response);
-          sending = false;
-        } else {
-          Serial.print("Error on sending POST: ");
-          Serial.println(httpResponseCode);
-        }
-        http.end();
-      } else {
-        Serial.println("Error in WiFi connection");   
-      }
-    }
   }
+
+  if(sending) {
+    if(WiFi.status()== WL_CONNECTED) {
+      HTTPClient http;
+      http.begin(endPoint);
+      Serial.println(endPoint);
+      http.addHeader("Content-Type", "text/plain");
+      int httpResponseCode = http.POST("POSTING from ESP32");
+      
+      if(httpResponseCode>0){
+        String response = http.getString();
+        Serial.println(httpResponseCode);
+        Serial.println(response);
+        sending = false;
+      } else {
+        Serial.print("Error on sending POST: ");
+        Serial.println(httpResponseCode);
+      }
+      http.end();
+    } else {
+      Serial.println("Error in WiFi connection");   
+    }
+  }*/
 }
 
 void setGyroAccelMagData() {
