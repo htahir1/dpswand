@@ -1,18 +1,30 @@
-import numpy as np
+from fastdtw import fastdtw
 from dtw import dtw
+import numpy as np
+import math
 
+def euclidean0_1(vector1, vector2):
+    '''calculate the euclidean distance, no numpy
+    input: numpy.arrays or lists
+    return: euclidean distance
+    '''
+    dist = [(a - b)**2 for a, b in zip(vector1, vector2)]
+    dist = math.sqrt(sum(dist))
+    return dist
 
 class DynamicTimeWarping:
     '''Class for comparing signals. Finds the distance of the test_data to the template'''
-
     def __init__(self):
         self.dist = 0
         self.cost = []
         self.path = []
 
-    def calculate_error(self, template, test_data):
-        self.dist, self.cost, self.acc, self.path = dtw(template, test_data,
-                                                        dist=lambda x, y: np.linalg.norm(x - y, ord=1))
+    def calculate_error_fast_dtw(self, template, test_data):
+        self.dist, self.path = fastdtw(template, test_data, dist=euclidean0_1)
+        return self.dist
+
+    def calculate_error_full_dtw(self, template, test_data):
+        self.dist, self.cost, self.acc, self.path = dtw(template, test_data, dist=lambda x, y: np.linalg.norm(x - y, ord=1))
         return self.dist
 
     def make_plot(self):
