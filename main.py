@@ -45,7 +45,7 @@ def post_template_gesture():
         if r:
             try:
                 result = Gesture(
-                    name="Temp",
+                    name="Test",
                     raw_data=r
                 )
                 result.put()
