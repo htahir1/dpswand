@@ -1,5 +1,5 @@
 from fastdtw import fastdtw
-import dtw
+from dtw import dtw
 import numpy as np
 import math
 
