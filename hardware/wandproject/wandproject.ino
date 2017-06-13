@@ -7,30 +7,39 @@
 const char* ssid = "AndroidAP";
 const char* password =  "byob6208";
 
-boolean sending = true;
-boolean recording = true;
+boolean sending = false;
+boolean recording = false;
+boolean setPrint = true;
 
 float gyrX, gyrY, gyrZ, accX, accY, accZ, magX, magY, magZ, roll, pitch, heading;
+const int buttonPinTraining = A6;
+const int buttonPinTesting = A7;
+int buttonStateTraining = 0;
+int buttonStateTesting = 0;
+static unsigned long lastPrint = 0;
 
+String endPoint;
 String recorded_data = "";
 
 LSM9DS1 imu;
 
 #define LSM9DS1_M 0x1E // Would be 0x1C if SDO_M is LOW
 #define LSM9DS1_AG  0x6B // Would be 0x6A if SDO_AG is LOW
-static unsigned long lastPrint = 0; // Keep track of print time
 #define DECLINATION -3.2 // Declination (degrees) in Munich, Germany.
+#define GESTURE_WINDOW 1500 // 1500ms gesture window
 
 void setup() {
   
   Serial.begin(115200);
-
   WiFi.begin(ssid, password); 
 
   while(WiFi.status() != WL_CONNECTED) { //Check for the connection
     delay(1000);
     Serial.println("Connecting to WiFi..");
   }
+
+  pinMode(buttonPinTraining, INPUT);
+  pinMode(buttonPinTesting, INPUT);
 
   Serial.println("Connected to the WiFi network");
   
@@ -50,47 +59,81 @@ void setup() {
 }
 
 void loop() {
+
+  buttonStateTraining = digitalRead(buttonPinTraining);
+  buttonStateTesting = digitalRead(buttonPinTesting);
+
+  if (buttonStateTraining == HIGH) {
+    Serial.println("Training");
+    endPoint = "http://dpswand.appspot.com/gesture/template";
+  }
   
+  if (buttonStateTesting == HIGH) {
+    Serial.println("Testing");
+    endPoint = "http://dpswand.appspot.com/gesture/test";
+  }
+
+  if (buttonStateTraining == HIGH || buttonStateTesting == HIGH) {
+    recording = true;
+    if (setPrint) {
+      lastPrint = millis();
+      setPrint = false;
+    }
+  } else {
+    if (recording) {
+      recording = false;
+      sending = true;
+    }
+  }
+
   if(recording) {
     // Update the sensor values whenever new data is available
-      if(imu.gyroAvailable()) {
-        imu.readGyro();
-      }
-      if(imu.accelAvailable()) {
-        imu.readAccel();
-      }
-      if(imu.magAvailable()) {
-        imu.readMag();
-      }
-      setData();
-      
+    if(imu.gyroAvailable()) {
+      imu.readGyro();
     }
+    if(imu.accelAvailable()) {
+      imu.readAccel();
+    }
+    if(imu.magAvailable()) {
+      imu.readMag();
+    }
+    setData();
+  }
+
 
   if(sending) {
-    if(WiFi.status()== WL_CONNECTED) {
-      HTTPClient http;   
-      http.begin("http://dpswand.appspot.com/gesture/template");
-      http.addHeader("Content-Type", "text/plain");
-      Serial.println(recorded_data);
-      int httpResponseCode = http.POST(recorded_data);
-      
-      if(httpResponseCode>0){
-        String response = http.getString();
-        Serial.println(httpResponseCode);
-        Serial.println(response);
-        sending = false;
-      } else {
-        Serial.print("Error on sending POST: ");
+    long tmp = millis() - lastPrint;
+    if(tmp <= GESTURE_WINDOW && tmp >= 500) {
+      if(WiFi.status()== WL_CONNECTED) {
+        
+        HTTPClient http;
+        http.begin(endPoint);
+        Serial.println(endPoint);
+        //http.addHeader("Content-Type", "text/plain");
         Serial.println(recorded_data);
+        recorded_data.trim();
+        http.setTimeout(65535); // Highest possible Timeout for testing purposes
+        int httpResponseCode = http.POST(recorded_data);
+        
+        if(httpResponseCode>0){
+          String response = http.getString();
+          Serial.println(httpResponseCode);
+          Serial.println(response);
+        } else {
+          Serial.print("Error on sending POST: ");
+          Serial.println(httpResponseCode);
+        }
+        http.end();
+      } else {
+        Serial.println("Error in WiFi connection");   
       }
-      http.end();
-    } else {
-      Serial.println("Error in WiFi connection");   
+      recorded_data = ""; // Clear data
     }
-
-    //clear data
-    recorded_data = "";
+    sending = false;
+    setPrint = true;
   }
+  
+  delay(50); // 50ms delay to limit recorded sample size
 }
 
 void setData() {
@@ -119,14 +162,14 @@ float store_data(float x, boolean last) {
 
 float getRoll(float ay, float az) {
   float roll = atan2(ay, az);
-  // Convert from radians to degrees:
+  // Convert from radians to degrees
   roll  *= 180.0 / PI;
   return roll;
 }
 
 float getPitch(float ax, float ay, float az) {
   float pitch = atan2(-ax, sqrt(ay * ay + az * az));
-  // Convert from radians to degrees:
+  // Convert from radians to degrees
   pitch *= 180.0 / PI;
   return pitch;
 }
@@ -143,7 +186,7 @@ float getHeading(float mx, float my, float mz) {
   else if (heading < -PI) heading += (2 * PI);
   else if (heading < 0) heading += 2 * PI;
   
-  // Convert from radians to degrees:
+  // Convert from radians to degrees
   heading *= 180.0 / PI;
   return heading;
 }
