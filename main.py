@@ -21,7 +21,7 @@ def convert_gesture_raw_to_np(raw_data):
     raw_data = raw_data.replace('\r', "")
     samples = [sample.split(', ') for sample in raw_data.split('\n')]
 
-    return np.array(samples, dtype=float).reshape(-1, 1)
+    return np.array(samples, dtype=float)
 
 
 @app.route('/', methods=['GET'])
@@ -75,7 +75,7 @@ def post_test_gesture():
             results = []
             for gesture in gestures:
                 template = convert_gesture_raw_to_np(gesture.raw_data)
-                predictor.calculate_error(template=template, test_data=test)
+                predictor.calculate_error_fast_dtw(template=template, test_data=test)
                 results.append(gesture.to_dict())
 
     return Response(json.dumps(results), mimetype='application/json')

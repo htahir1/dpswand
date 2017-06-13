@@ -1,18 +1,20 @@
+import fastdtw
+from scipy.spatial.distance import euclidean
+import dtw
 import numpy as np
-from dtw import dtw
-
 
 class DynamicTimeWarping:
-    """A simple example class"""
-
     def __init__(self):
         self.dist = 0
         self.cost = []
         self.path = []
 
-    def calculate_error(self, template, test_data):
-        self.dist, self.cost, self.acc, self.path = dtw(template, test_data,
-                                                        dist=lambda x, y: np.linalg.norm(x - y, ord=1))
+    def calculate_error_fast_dtw(self, template, test_data):
+        self.dist, self.path = fastdtw(template, test_data, dist=euclidean)
+        return self.dist
+
+    def calculate_error_full_dtw(self, template, test_data):
+        self.dist, self.cost, self.acc, self.path = dtw(template, test_data, dist=lambda x, y: np.linalg.norm(x - y, ord=1))
         return self.dist
 
     def make_plot(self):
