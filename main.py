@@ -1,24 +1,15 @@
 from flask import Flask, render_template, request
-import flask.ext.sqlalchemy
 from config import DevelopmentConfig
 import numpy as np
 from common.DTW import DynamicTimeWarping
 from google.appengine.ext import ndb
+from flask import jsonify
+from flask import Response
+import json
 
 # Create the Flask application and the Flask-SQLAlchemy object.
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
-
-
-# class Person(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.Unicode, unique=True)
-#
-#     def __init__(self, name, birth_date):
-#         self.name = name
-#
-#     def __repr__(self):
-#         return '<id {}>'.format(self.id)
 
 
 class Gesture(ndb.Model):
@@ -30,7 +21,7 @@ def convert_gesture_raw_to_np(raw_data):
     raw_data = raw_data.replace('\r', "")
     samples = [sample.split(', ') for sample in raw_data.split('\n')]
 
-    return np.array(samples, dtype=float).reshape(-1, 1)
+    return np.array(samples, dtype=float)
 
 
 @app.route('/', methods=['GET'])
@@ -52,20 +43,16 @@ def post_template_gesture():
             )
             return render_template('index.html', errors=errors)
         if r:
-            raw_data = r
-            # save the results
-            results = sorted(
-                raw_data
-            )
             try:
                 result = Gesture(
                     name="Temp",
-                    raw_data=raw_data
+                    raw_data=r
                 )
                 result.put()
             except:
                 errors.append("Unable to add item to database.")
-    return render_template('index.html', errors=errors, results=results)
+                return render_template('index.html', errors=errors)
+    return jsonify(result.to_dict())
 
 
 @app.route('/gesture/test', methods=['POST'])
@@ -88,14 +75,26 @@ def post_test_gesture():
             results = []
             for gesture in gestures:
                 template = convert_gesture_raw_to_np(gesture.raw_data)
-                dist = predictor.calculate_error(template=template, test_data=test)
-                results.append({'name' : gesture.name, 'dist' : dist})
+                dist = predictor.calculate_error_full_dtw(template=template, test_data=test)
+                results.append(json.dumps({"Gesture" : gesture.name, "Distance" : dist}))
 
-    return render_template('prediction_result.html', errors=errors, predictions=results)
+    return Response(json.dumps(results), mimetype='application/json')
 
 
-# if __name__ == '__main__':
-#     # Create the database tables.
-#     db.create_all()
-#     # start the flask loop
-#     app.run()
+@app.route('/gesture', methods=['GET'])
+def return_gesture_templates():
+    results = {}
+    if request.method == "GET":
+        gestures = Gesture.query().fetch()
+        results = []
+        for gesture in gestures:
+            results.append(gesture.to_dict())
+
+    return Response(json.dumps(results), mimetype='application/json')
+
+
+    # if __name__ == '__main__':
+    #     # Create the database tables.
+    #     db.create_all()
+    #     # start the flask loop
+    #     app.run()
