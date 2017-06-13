@@ -9,7 +9,6 @@ const char* password =  "byob6208";
 
 boolean sending = false;
 boolean recording = false;
-boolean endpointCheck = false;
 
 float gyrX, gyrY, gyrZ, accX, accY, accZ, magX, magY, magZ, roll, pitch, heading;
 const int buttonPinTraining = A6;
@@ -24,7 +23,6 @@ LSM9DS1 imu;
 
 #define LSM9DS1_M 0x1E // Would be 0x1C if SDO_M is LOW
 #define LSM9DS1_AG  0x6B // Would be 0x6A if SDO_AG is LOW
-static unsigned long lastPrint = 0; // Keep track of print time
 #define DECLINATION -3.2 // Declination (degrees) in Munich, Germany.
 
 void setup() {
@@ -37,6 +35,9 @@ void setup() {
     delay(1000);
     Serial.println("Connecting to WiFi..");
   }
+
+  pinMode(buttonPinTraining, INPUT);
+  pinMode(buttonPinTesting, INPUT);
 
   Serial.println("Connected to the WiFi network");
   
@@ -57,29 +58,28 @@ void setup() {
 
 void loop() {
 
-  buttonStateTraining = analogRead(buttonPinTraining);
-  buttonStateTesting = analogRead(buttonPinTesting);
-
-  Serial.println(buttonStateTraining);
-  Serial.println(buttonStateTesting);
+  buttonStateTraining = digitalRead(buttonPinTraining);
+  buttonStateTesting = digitalRead(buttonPinTesting);
 
   if (buttonStateTraining == HIGH) {
+    Serial.println("Training");
     endPoint = "http://dpswand.appspot.com/gesture/template";
-  } 
+  }
   
   if (buttonStateTesting == HIGH) {
+    Serial.println("Testing");
     endPoint = "http://dpswand.appspot.com/gesture/test";
   }
 
   if (buttonStateTraining == HIGH || buttonStateTesting == HIGH) {
-    Serial.println("Button Pressed");
     recording = true;
   } else {
-    Serial.println("Button Released");
-    recording = false;
-    sending = true; 
+    if (recording) {
+      recording = false;
+      sending = true; 
+    }
   }
-  
+
   if(recording) {
     // Update the sensor values whenever new data is available
       if(imu.gyroAvailable()) {
@@ -98,11 +98,14 @@ void loop() {
 
   if(sending) {
     if(WiFi.status()== WL_CONNECTED) {
+      
       HTTPClient http;
       http.begin(endPoint);
       Serial.println(endPoint);
-      http.addHeader("Content-Type", "text/plain");
+      //http.addHeader("Content-Type", "text/plain");
       Serial.println(recorded_data);
+      recorded_data.trim();
+      http.setTimeout(10000);
       int httpResponseCode = http.POST(recorded_data);
       
       if(httpResponseCode>0){
@@ -121,6 +124,8 @@ void loop() {
     //clear data
     recorded_data = "";
   }
+
+  delay(50);
 }
 
 void setData() {
