@@ -1,7 +1,17 @@
-import fastdtw
-from scipy.spatial.distance import euclidean
+from fastdtw import fastdtw
 import dtw
 import numpy as np
+import math
+
+def euclidean0_1(vector1, vector2):
+    '''calculate the euclidean distance, no numpy
+    input: numpy.arrays or lists
+    return: euclidean distance
+    '''
+    dist = [(a - b)**2 for a, b in zip(vector1, vector2)]
+    dist = math.sqrt(sum(dist))
+    return dist
+
 
 class DynamicTimeWarping:
     def __init__(self):
@@ -10,7 +20,7 @@ class DynamicTimeWarping:
         self.path = []
 
     def calculate_error_fast_dtw(self, template, test_data):
-        self.dist, self.path = fastdtw(template, test_data, dist=euclidean)
+        self.dist, self.path = fastdtw(template, test_data, dist=euclidean0_1)
         return self.dist
 
     def calculate_error_full_dtw(self, template, test_data):
