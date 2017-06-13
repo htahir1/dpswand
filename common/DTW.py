@@ -12,8 +12,8 @@ def euclidean0_1(vector1, vector2):
     dist = math.sqrt(sum(dist))
     return dist
 
-
 class DynamicTimeWarping:
+    '''Class for comparing signals. Finds the distance of the test_data to the template'''
     def __init__(self):
         self.dist = 0
         self.cost = []
