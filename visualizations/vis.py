@@ -7,13 +7,10 @@ import json
 from common.DTW import DynamicTimeWarping
 from pylab import pcolor, colorbar, xticks, yticks
 from numpy import arange
+from common.Helper import convert_gesture_raw_to_np
 
 with open('data.csv', 'r') as content_file:
     content = content_file.read()
-
-
-def normalize_data(x):
-    return (x - x.min(0)) / x.ptp(0)
 
 
 def vis_3d(X, Y, Z, label):
@@ -53,9 +50,7 @@ def heat_maps():
     counter = 0
     for jsn in json_list:
         content = jsn["raw_data"]
-        raw_data = content.replace('\r', "")
-        samples = [sample.split(', ') for sample in raw_data.split('\n')]
-        samples = normalize_data(np.array(samples, dtype=float))
+        samples = convert_gesture_raw_to_np(content)
         gyro_data = samples[:, :3]
         acceleration_data = samples[:, 3:6]
         magnetometer_data = samples[:, 6:9]
@@ -79,9 +74,7 @@ def heat_maps():
             y_labels.append(jsn["name"])
             for json2 in json_list:
                 content = json2["raw_data"]
-                raw_data = content.replace('\r', "")
-                samples_2 = [sample.split(', ') for sample in raw_data.split('\n')]
-                samples_2 = normalize_data(np.array(samples_2, dtype=float))
+                samples_2 = convert_gesture_raw_to_np(content)
                 gyro_data_2 = samples_2[:, :3]
                 acceleration_data_2 = samples_2[:, 3:6]
                 magnetometer_data_2 = samples_2[:, 6:9]
@@ -157,9 +150,7 @@ def vis_3d_all():
 
     for jsn in json_list:
         content = jsn["raw_data"]
-        raw_data = content.replace('\r', "")
-        samples = [sample.split(', ') for sample in raw_data.split('\n')]
-        samples = normalize_data(np.array(samples, dtype=float))
+        samples = convert_gesture_raw_to_np(content)
         gyro_data = samples[:, :3]
         acceleration_data = samples[:, 3:6]
         magnetometer_data = samples[:, 6:9]

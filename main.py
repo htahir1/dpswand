@@ -6,6 +6,7 @@ from google.appengine.ext import ndb
 from flask import jsonify
 from flask import Response
 import json
+from common.Helper import convert_gesture_raw_to_np
 
 # Create the Flask application and the Flask-SQLAlchemy object.
 app = Flask(__name__)
@@ -15,17 +16,6 @@ app.config.from_object(DevelopmentConfig)
 class Gesture(ndb.Model):
     name = ndb.TextProperty()
     raw_data = ndb.TextProperty()
-
-
-def convert_gesture_raw_to_np(raw_data):
-    raw_data = raw_data.replace('\r', "")
-    samples = [sample.split(', ') for sample in raw_data.split('\n')]
-
-    return normalize_data(np.array(samples, dtype=float))
-
-
-def normalize_data(x):
-    return (x - x.min(0)) / x.ptp(0)
 
 
 @app.route('/', methods=['GET'])
