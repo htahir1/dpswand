@@ -1,4 +1,4 @@
-import matplotlib as mpl
+from common.Preprocessing import resample_data
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -8,9 +8,6 @@ from common.DTW import DynamicTimeWarping
 from pylab import pcolor, colorbar, xticks, yticks
 from numpy import arange
 from common.Helper import convert_gesture_raw_to_np
-
-with open('data.csv', 'r') as content_file:
-    content = content_file.read()
 
 
 def vis_3d(X, Y, Z, label):
@@ -23,15 +20,23 @@ def vis_3d(X, Y, Z, label):
 
 
 def plot_heat_map(matrix, x_labels, y_labels):
-    pcolor(matrix)
-    colorbar()
+    heatmap = pcolor(matrix)
+    for y in range(matrix.shape[0]):
+        for x in range(matrix.shape[1]):
+            plt.text(x + 0.5, y + 0.5, '%.2f' % matrix[y, x],
+                     horizontalalignment='center',
+                     verticalalignment='center',
+                     fontsize=7
+                     )
+
+    colorbar(heatmap)
     xticks(arange(0.5, matrix.shape[1] + 0.5), x_labels, rotation=90)
     yticks(arange(0.5, matrix.shape[0] + 0.5), y_labels)
     plt.tick_params(axis='both', labelsize=9)
     plt.show()
 
 
-def heat_maps():
+def generate_heat_maps():
     json_list = json.loads(urllib2.urlopen("http://dpswand.appspot.com/gesture").read())
 
     dtw = DynamicTimeWarping()
@@ -157,7 +162,7 @@ def vis_3d_all():
         orientation_data = samples[:, 9:12]
 
 
-        if jsn["name"] == "Test":
+        if jsn["name"] == "Circle":
             X = gyro_data[:, :1].flatten()
             Y = gyro_data[:, 1:2].flatten()
             Z = gyro_data[:, 2:3].flatten()
@@ -179,4 +184,4 @@ def vis_3d_all():
             vis_3d(X, Y, Z, "Mag" + jsn["name"])
 
 
-vis_3d_all()
+generate_heat_maps()
