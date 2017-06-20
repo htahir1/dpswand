@@ -1,12 +1,13 @@
-from common.Preprocessing import resample_data
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import urllib2
 import json
-from common.DTW import DynamicTimeWarping
-from pylab import pcolor, colorbar, xticks, yticks
+import urllib2
+
+import matplotlib.pyplot as plt
+import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
 from numpy import arange
+from pylab import pcolor, colorbar, xticks, yticks
+
+from common.DTW import DynamicTimeWarping
 from common.Helper import convert_gesture_raw_to_np
 
 
