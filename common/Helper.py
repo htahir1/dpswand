@@ -1,7 +1,7 @@
 import numpy as np
 
 standard_length_size = 25
-from scipy import signal
+# from scipy import signal
 
 
 def resample_data(samples):
@@ -13,7 +13,8 @@ def resample_data(samples):
     if samples.shape[0] < standard_length_size:
         # npad = ((missing_values_length, 0), (0, 0))
         # new_samples = np.pad(samples, pad_width=npad, mode='mean')
-        new_samples = signal.resample(samples, standard_length_size)
+        # new_samples = signal.resample(samples, standard_length_size)
+        pass
 
     elif samples.shape[0] > standard_length_size:
         # new_samples = np.delete(new_samples, [0], axis=0)

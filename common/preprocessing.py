@@ -1,7 +1,7 @@
 import json
 import urllib2
 import numpy as np
-from scipy import signal
+# from scipy import signal
 from common.Helper import convert_gesture_raw_to_np
 
 standard_length_size = 25
@@ -36,7 +36,8 @@ def resample_data(samples):
     if samples.shape[0] < standard_length_size:
         # npad = ((missing_values_length, 0), (0, 0))
         # new_samples = np.pad(samples, pad_width=npad, mode='mean')
-        new_samples = signal.resample(samples, standard_length_size)
+        # new_samples = signal.resample(samples, standard_length_size)
+        pass
 
     elif samples.shape[0] > standard_length_size:
         # new_samples = np.delete(new_samples, [0], axis=0)

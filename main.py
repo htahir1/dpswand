@@ -49,41 +49,41 @@ def post_template_gesture():
     return jsonify(result.to_dict())
 
 
-@app.route('/gesture/full_test', methods=['POST'])
-def post_test_gesture():
-    errors = []
-    results = {}
-    if request.method == "POST":
-        # get url that the person has entered
-        try:
-            r = request.get_data()
-        except:
-            errors.append(
-                "Unable to get URL. Please make sure it's valid and try again."
-            )
-            return render_template('index.html', errors=errors)
-        if r:
-            test = convert_gesture_raw_to_np(r)
-
-            predictor = DynamicTimeWarping()
-            gestures = Gesture.query().fetch()
-            results = []
-            for gesture in gestures:
-                template = convert_gesture_raw_to_np(gesture.raw_data)
-                dist_gyro = predictor.calculate_error_full_dtw(template=template[:, :3], test_data=test[:, :3])
-                dist_acc = predictor.calculate_error_full_dtw(template=template[:, 3:6], test_data=test[:, 3:6])
-                dist_mag = predictor.calculate_error_full_dtw(template=template[:, 6:9], test_data=test[:, 6:9])
-                dist_ori = predictor.calculate_error_full_dtw(template=template[:, 9:12], test_data=test[:, 9:12])
-                dist_total = predictor.calculate_error_full_dtw(template=template, test_data=test)
-
-                results.append(json.dumps({"Gesture" : gesture.name,
-                                           "Distance Total" : dist_total,
-                                           "Distance Gyro" : dist_gyro,
-                                           "Distance Accelerometer": dist_acc,
-                                           "Distance Magnetometer" : dist_mag,
-                                           "Distance Orientation" : dist_ori}))
-
-    return Response(json.dumps(results), mimetype='application/json')
+# @app.route('/gesture/fulltest', methods=['POST'])
+# def post_full_test_gesture():
+#     errors = []
+#     results = {}
+#     if request.method == "POST":
+#         # get url that the person has entered
+#         try:
+#             r = request.get_data()
+#         except:
+#             errors.append(
+#                 "Unable to get URL. Please make sure it's valid and try again."
+#             )
+#             return render_template('index.html', errors=errors)
+#         if r:
+#             test = convert_gesture_raw_to_np(r)
+#
+#             predictor = DynamicTimeWarping()
+#             gestures = Gesture.query().fetch()
+#             results = []
+#             for gesture in gestures:
+#                 template = convert_gesture_raw_to_np(gesture.raw_data)
+#                 dist_gyro = predictor.calculate_error_full_dtw(template=template[:, :3], test_data=test[:, :3])
+#                 dist_acc = predictor.calculate_error_full_dtw(template=template[:, 3:6], test_data=test[:, 3:6])
+#                 dist_mag = predictor.calculate_error_full_dtw(template=template[:, 6:9], test_data=test[:, 6:9])
+#                 dist_ori = predictor.calculate_error_full_dtw(template=template[:, 9:12], test_data=test[:, 9:12])
+#                 dist_total = predictor.calculate_error_full_dtw(template=template, test_data=test)
+#
+#                 results.append(json.dumps({"Gesture" : gesture.name,
+#                                            "Distance Total" : dist_total,
+#                                            "Distance Gyro" : dist_gyro,
+#                                            "Distance Accelerometer": dist_acc,
+#                                            "Distance Magnetometer" : dist_mag,
+#                                            "Distance Orientation" : dist_ori}))
+#
+#     return Response(json.dumps(results), mimetype='application/json')
 
 
 @app.route('/gesture/test', methods=['POST'])
